@@ -8,6 +8,8 @@ The main logger function follows this format:
 Log(stack, level, packageName, message);
 ```
 
+Use `packageName` in JavaScript because `package` is a reserved word in some JavaScript modes. The request body still sends the key as `package`.
+
 It sends this body to the log API:
 
 ```json
@@ -58,3 +60,11 @@ app.use(errorLoggingMiddleware);
 ```
 
 The token should not be written directly in the code or committed to Git.
+
+Allowed values:
+
+```text
+stack: backend, frontend
+level: debug, info, warn, error, fatal
+package: api, component, hook, page, state, style, auth, config, middleware, utils, cache, controller, cron_job, db, domain, handler, repository, route, service
+```

@@ -1,7 +1,53 @@
 const LOG_API_URL =
   process.env.LOG_API_URL || "http://4.224.186.213/evaluation-service/logs";
 
+const allowedStacks = ["backend", "frontend"];
+const allowedLevels = ["debug", "info", "warn", "error", "fatal"];
+const allowedPackages = [
+  "api",
+  "component",
+  "hook",
+  "page",
+  "state",
+  "style",
+  "auth",
+  "config",
+  "middleware",
+  "utils",
+  "cache",
+  "controller",
+  "cron_job",
+  "db",
+  "domain",
+  "handler",
+  "repository",
+  "route",
+  "service",
+];
+
+function isValidLog(stack, level, packageName, message) {
+  return (
+    allowedStacks.includes(stack) &&
+    allowedLevels.includes(level) &&
+    allowedPackages.includes(packageName) &&
+    typeof message === "string" &&
+    message.trim().length > 0
+  );
+}
+
 async function Log(stack, level, packageName, message) {
+  const logData = {
+    stack: String(stack || "").toLowerCase(),
+    level: String(level || "").toLowerCase(),
+    package: String(packageName || "").toLowerCase(),
+    message,
+  };
+
+  if (!isValidLog(logData.stack, logData.level, logData.package, message)) {
+    console.error("Invalid log data", logData);
+    return null;
+  }
+
   const headers = {
     "Content-Type": "application/json",
   };
@@ -14,19 +60,18 @@ async function Log(stack, level, packageName, message) {
     const response = await fetch(LOG_API_URL, {
       method: "POST",
       headers,
-      body: JSON.stringify({
-        stack,
-        level,
-        package: packageName,
-        message,
-      }),
+      body: JSON.stringify(logData),
     });
 
     if (!response.ok) {
       console.error(`Log API failed with status ${response.status}`);
+      return null;
     }
+
+    return response.json();
   } catch (error) {
     console.error(`Log API error - ${error.message}`);
+    return null;
   }
 }
 
