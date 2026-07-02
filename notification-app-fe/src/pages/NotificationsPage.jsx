@@ -15,6 +15,7 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import { NotificationCard } from "../components/NotificationCard";
 import { NotificationFilter } from "../components/NotificationFilter";
 import { useNotifications } from "../hooks/useNotifications";
+import { Log } from "../utils/logger";
 
 export function NotificationsPage() {
   const [filter, setFilter] = useState("All");
@@ -32,10 +33,12 @@ export function NotificationsPage() {
   const handleFilterChange = (newFilter) => {
     setFilter(newFilter);
     setPage(1);
+    Log("frontend", "info", "page", `Notification filter changed to ${newFilter}`);
   };
 
   const handlePageChange = (_, newPage) => {
     setPage(newPage);
+    Log("frontend", "debug", "page", `Notification page changed to ${newPage}`);
   };
 
   return (

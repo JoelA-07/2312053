@@ -1,5 +1,8 @@
+const { loadEnv } = require("./config/loadEnv");
 const app = require("./app");
 const { Log } = require("../../logging-middleware");
+
+loadEnv();
 
 const PORT = process.env.PORT || 5000;
 

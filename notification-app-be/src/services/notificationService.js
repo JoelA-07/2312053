@@ -1,4 +1,5 @@
 const { Log } = require("../../../logging-middleware");
+const { getPriorityNotifications } = require("../utils/priority");
 
 const API_URL = "http://4.224.186.213/evaluation-service/notifications";
 const readNotificationIds = new Set();
@@ -90,6 +91,24 @@ async function getUnreadCount(query = {}) {
   return result.notifications.filter((notification) => !notification.isRead).length;
 }
 
+async function getPriorityInbox(query = {}) {
+  const limit = Number(query.limit || 10);
+  const result = await getNotifications({
+    ...query,
+    page: 1,
+    limit: query.sourceLimit || 100,
+  });
+  const unreadNotifications = result.notifications.filter(
+    (notification) => !notification.isRead
+  );
+
+  return {
+    notifications: getPriorityNotifications(unreadNotifications, limit),
+    limit,
+    total: unreadNotifications.length,
+  };
+}
+
 function markAsRead(notificationId) {
   if (!notificationId) {
     const error = new Error("Notification id is required");
@@ -158,6 +177,7 @@ function createNotification(body) {
 module.exports = {
   getNotifications,
   getNotificationById,
+  getPriorityInbox,
   getUnreadCount,
   markAsRead,
   markAllAsRead,

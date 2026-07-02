@@ -31,6 +31,19 @@ const getUnreadCount = asyncHandler(async (req, res) => {
   sendSuccess(res, { unreadCount });
 });
 
+const getPriorityInbox = asyncHandler(async (req, res) => {
+  const result = await notificationService.getPriorityInbox(req.query);
+
+  Log(
+    "backend",
+    "info",
+    "controller",
+    `Fetched ${result.notifications.length} priority notifications`
+  );
+
+  sendSuccess(res, result);
+});
+
 const markAsRead = asyncHandler(async (req, res) => {
   const notification = notificationService.markAsRead(req.params.notificationId);
 
@@ -75,6 +88,7 @@ const createNotification = asyncHandler(async (req, res) => {
 module.exports = {
   getNotifications,
   getNotificationById,
+  getPriorityInbox,
   getUnreadCount,
   markAsRead,
   markAllAsRead,

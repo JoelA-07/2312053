@@ -1,6 +1,5 @@
 const API_URL =
-  import.meta.env.VITE_NOTIFICATION_API_URL ||
-  "http://4.224.186.213/evaluation-service/notifications";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 function normalizeNotification(notification) {
   return {
@@ -36,7 +35,7 @@ async function request(url) {
 }
 
 export function fetchNotifications({ page = 1, limit = 10, type = "All" } = {}) {
-  const url = new URL(API_URL);
+  const url = new URL(`${API_URL}/notifications`);
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
@@ -60,4 +59,28 @@ export function fetchNotifications({ page = 1, limit = 10, type = "All" } = {}) 
       total: data.total || notifications.length,
     };
   });
+}
+
+export function fetchPriorityNotifications({
+  limit = 10,
+  type = "All",
+} = {}) {
+  const url = new URL(`${API_URL}/notifications/priority`);
+  const params = new URLSearchParams({
+    limit: String(limit),
+  });
+
+  if (type && type !== "All") {
+    params.set("notification_type", type);
+  }
+
+  url.search = params.toString();
+
+  return request(url).then((data) => ({
+    notifications: Array.isArray(data.notifications)
+      ? data.notifications.map(normalizeNotification)
+      : [],
+    limit,
+    total: data.total || 0,
+  }));
 }

@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import {
-  fetchNotifications,
-  fetchUnreadCount,
-  markNotificationAsRead,
-} from "../api/notifications";
+import { fetchNotifications } from "../api/notifications";
 import { Log } from "../utils/logger";
+import {
+  getViewedNotificationIds,
+  saveViewedNotificationId,
+} from "../utils/viewedNotifications";
 
 export function useNotifications({ page, filter, limit = 10 }) {
   const [notifications, setNotifications] = useState([]);
@@ -21,18 +21,23 @@ export function useNotifications({ page, filter, limit = 10 }) {
         setLoading(true);
         setError("");
 
-        const [listData, countData] = await Promise.all([
-          fetchNotifications({ page, limit, type: filter }),
-          fetchUnreadCount(),
-        ]);
+        const listData = await fetchNotifications({ page, limit, type: filter });
 
         if (ignore) {
           return;
         }
 
-        setNotifications(listData.notifications ?? []);
+        const viewedIds = getViewedNotificationIds();
+        const nextNotifications = (listData.notifications ?? []).map((notification) => ({
+          ...notification,
+          isRead: viewedIds.includes(notification.id),
+        }));
+
+        setNotifications(nextNotifications);
         setTotal(listData.total ?? 0);
-        setUnreadCount(countData.unreadCount ?? 0);
+        setUnreadCount(
+          nextNotifications.filter((notification) => !notification.isRead).length
+        );
         Log("frontend", "info", "hook", "Notifications loaded successfully");
       } catch (err) {
         if (!ignore) {
@@ -52,8 +57,8 @@ export function useNotifications({ page, filter, limit = 10 }) {
     };
   }, [page, filter, limit]);
 
-  const markAsRead = async (notificationId) => {
-    await markNotificationAsRead(notificationId);
+  const markAsRead = (notificationId) => {
+    saveViewedNotificationId(notificationId);
     setNotifications((current) =>
       current.map((notification) =>
         notification.id === notificationId

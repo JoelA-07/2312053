@@ -31,7 +31,8 @@ function loadEnv() {
       }
 
       const key = trimmedLine.slice(0, separatorIndex).trim();
-      const value = trimmedLine.slice(separatorIndex + 1).trim();
+      const rawValue = trimmedLine.slice(separatorIndex + 1).trim();
+      const value = rawValue.replace(/^["']|["']$/g, "");
 
       if (!process.env[key]) {
         process.env[key] = value;

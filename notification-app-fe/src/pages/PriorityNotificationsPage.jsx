@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Box,
@@ -14,19 +14,83 @@ import {
 
 import { NotificationCard } from "../components/NotificationCard";
 import { NotificationFilter } from "../components/NotificationFilter";
-import { useNotifications } from "../hooks/useNotifications";
-import { getPriorityNotifications } from "../utils/priority";
+import { fetchPriorityNotifications } from "../api/notifications";
+import { Log } from "../utils/logger";
+import {
+  getViewedNotificationIds,
+  saveViewedNotificationId,
+} from "../utils/viewedNotifications";
 
 export function PriorityNotificationsPage() {
   const [filter, setFilter] = useState("All");
   const [limit, setLimit] = useState(10);
+  const [priorityNotifications, setPriorityNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const { notifications, loading, error, markAsRead } = useNotifications({
-    page: 1,
-    filter,
-    limit: 50,
-  });
-  const priorityNotifications = getPriorityNotifications(notifications, limit);
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadPriorityNotifications() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await fetchPriorityNotifications({ limit, type: filter });
+
+        if (ignore) {
+          return;
+        }
+
+        const viewedIds = getViewedNotificationIds();
+        setPriorityNotifications(
+          data.notifications.map((notification) => ({
+            ...notification,
+            isRead: viewedIds.includes(notification.id),
+          }))
+        );
+        Log("frontend", "info", "page", "Priority notifications loaded");
+      } catch (err) {
+        if (!ignore) {
+          setError(err.message || "Unable to load priority notifications");
+          Log("frontend", "error", "page", "Unable to load priority notifications");
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadPriorityNotifications();
+
+    return () => {
+      ignore = true;
+    };
+  }, [filter, limit]);
+
+  const handleFilterChange = (nextFilter) => {
+    setFilter(nextFilter);
+    Log("frontend", "info", "page", `Priority filter changed to ${nextFilter}`);
+  };
+
+  const handleLimitChange = (event) => {
+    const nextLimit = Number(event.target.value);
+
+    setLimit(nextLimit);
+    Log("frontend", "debug", "page", `Priority limit changed to ${nextLimit}`);
+  };
+
+  const markAsRead = (notificationId) => {
+    saveViewedNotificationId(notificationId);
+    setPriorityNotifications((current) =>
+      current.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, isRead: true }
+          : notification
+      )
+    );
+  };
 
   return (
     <Box sx={{ maxWidth: 820, mx: "auto", px: 2, py: 4 }}>
@@ -51,7 +115,7 @@ export function PriorityNotificationsPage() {
             labelId="priority-limit-label"
             label="Limit"
             value={limit}
-            onChange={(event) => setLimit(Number(event.target.value))}
+            onChange={handleLimitChange}
           >
             <MenuItem value={10}>Top 10</MenuItem>
             <MenuItem value={15}>Top 15</MenuItem>
@@ -61,7 +125,7 @@ export function PriorityNotificationsPage() {
       </Stack>
 
       <Box sx={{ mb: 3 }}>
-        <NotificationFilter value={filter} onChange={setFilter} />
+        <NotificationFilter value={filter} onChange={handleFilterChange} />
       </Box>
 
       {loading && (
