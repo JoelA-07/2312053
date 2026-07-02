@@ -1,13 +1,29 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const API_URL =
+  import.meta.env.VITE_NOTIFICATION_API_URL ||
+  "http://4.224.186.213/evaluation-service/notifications";
 
-async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+function normalizeNotification(notification) {
+  return {
+    id: notification.ID || notification.id,
+    type: notification.Type || notification.type || "Event",
+    message: notification.Message || notification.message || "",
+    timestamp: notification.Timestamp || notification.timestamp || "",
+  };
+}
+
+async function request(url) {
+  const headers = {
+    Accept: "application/json",
+  };
+
+  if (import.meta.env.VITE_NOTIFICATION_API_TOKEN) {
+    headers.Authorization = `Bearer ${import.meta.env.VITE_NOTIFICATION_API_TOKEN}`;
+  }
+
+  const response = await fetch(url, {
     headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
+      ...headers,
     },
-    ...options,
   });
 
   const data = await response.json().catch(() => ({}));
@@ -20,6 +36,7 @@ async function request(path, options = {}) {
 }
 
 export function fetchNotifications({ page = 1, limit = 10, type = "All" } = {}) {
+  const url = new URL(API_URL);
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
@@ -29,16 +46,18 @@ export function fetchNotifications({ page = 1, limit = 10, type = "All" } = {}) 
     params.set("notification_type", type);
   }
 
-  return request(`/notifications?${params.toString()}`);
-}
+  url.search = params.toString();
 
-export function fetchUnreadCount() {
-  return request("/notifications/unread-count");
-}
+  return request(url).then((data) => {
+    const notifications = Array.isArray(data.notifications)
+      ? data.notifications.map(normalizeNotification)
+      : [];
 
-export function markNotificationAsRead(notificationId) {
-  return request(`/notifications/${notificationId}/read`, {
-    method: "PATCH",
-    body: JSON.stringify({ isRead: true }),
+    return {
+      notifications,
+      page,
+      limit,
+      total: data.total || notifications.length,
+    };
   });
 }
