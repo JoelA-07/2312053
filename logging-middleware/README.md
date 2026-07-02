@@ -1,6 +1,6 @@
 # Logging Middleware
 
-Simple Express-style middleware for logging request method, URL, status code, response time, and errors.
+Reusable JavaScript logging package for sending application logs to the test server.
 
 The main logger function follows this format:
 
@@ -45,7 +45,7 @@ The log API URL can also be changed if needed:
 LOG_API_URL=http://4.224.186.213/evaluation-service/logs
 ```
 
-Example:
+Backend example:
 
 ```js
 const {
@@ -57,6 +57,15 @@ const {
 Log("backend", "info", "service", "Notification service started");
 app.use(loggingMiddleware);
 app.use(errorLoggingMiddleware);
+```
+
+Frontend example:
+
+```js
+import { Log, setLogConfig } from "../logging-middleware";
+
+setLogConfig({ token: accessToken });
+Log("frontend", "info", "page", "Notifications page opened");
 ```
 
 The token should not be written directly in the code or committed to Git.

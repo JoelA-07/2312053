@@ -1,5 +1,8 @@
-const LOG_API_URL =
-  process.env.LOG_API_URL || "http://4.224.186.213/evaluation-service/logs";
+const defaultLogUrl = "http://4.224.186.213/evaluation-service/logs";
+const logConfig = {
+  url: "",
+  token: "",
+};
 
 const allowedStacks = ["backend", "frontend"];
 const allowedLevels = ["debug", "info", "warn", "error", "fatal"];
@@ -35,6 +38,28 @@ function isValidLog(stack, level, packageName, message) {
   );
 }
 
+function getEnvValue(name) {
+  if (typeof process === "undefined" || !process.env) {
+    return "";
+  }
+
+  return process.env[name] || "";
+}
+
+function setLogConfig(config) {
+  if (!config) {
+    return;
+  }
+
+  if (config.url) {
+    logConfig.url = config.url;
+  }
+
+  if (config.token) {
+    logConfig.token = config.token;
+  }
+}
+
 async function Log(stack, level, packageName, message) {
   const logData = {
     stack: String(stack || "").toLowerCase(),
@@ -51,13 +76,15 @@ async function Log(stack, level, packageName, message) {
   const headers = {
     "Content-Type": "application/json",
   };
+  const token = logConfig.token || getEnvValue("LOG_ACCESS_TOKEN");
 
-  if (process.env.LOG_ACCESS_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.LOG_ACCESS_TOKEN}`;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
   try {
-    const response = await fetch(LOG_API_URL, {
+    const logUrl = logConfig.url || getEnvValue("LOG_API_URL") || defaultLogUrl;
+    const response = await fetch(logUrl, {
       method: "POST",
       headers,
       body: JSON.stringify(logData),
@@ -106,6 +133,7 @@ function errorLoggingMiddleware(err, req, res, next) {
 
 module.exports = {
   Log,
+  setLogConfig,
   loggingMiddleware,
   errorLoggingMiddleware,
 };
