@@ -3,8 +3,15 @@ const { sendSuccess } = require("../utils/apiResponse");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { Log } = require("../../../logging-middleware");
 
+function withAuth(req) {
+  return {
+    ...req.query,
+    authorization: req.headers.authorization,
+  };
+}
+
 const getNotifications = asyncHandler(async (req, res) => {
-  const result = await notificationService.getNotifications(req.query);
+  const result = await notificationService.getNotifications(withAuth(req));
 
   Log(
     "backend",
@@ -19,20 +26,20 @@ const getNotifications = asyncHandler(async (req, res) => {
 const getNotificationById = asyncHandler(async (req, res) => {
   const notification = await notificationService.getNotificationById(
     req.params.notificationId,
-    req.query
+    withAuth(req)
   );
 
   sendSuccess(res, { notification });
 });
 
 const getUnreadCount = asyncHandler(async (req, res) => {
-  const unreadCount = await notificationService.getUnreadCount(req.query);
+  const unreadCount = await notificationService.getUnreadCount(withAuth(req));
 
   sendSuccess(res, { unreadCount });
 });
 
 const getPriorityInbox = asyncHandler(async (req, res) => {
-  const result = await notificationService.getPriorityInbox(req.query);
+  const result = await notificationService.getPriorityInbox(withAuth(req));
 
   Log(
     "backend",
@@ -61,7 +68,7 @@ const markAsRead = asyncHandler(async (req, res) => {
 });
 
 const markAllAsRead = asyncHandler(async (req, res) => {
-  const updatedCount = await notificationService.markAllAsRead(req.query);
+  const updatedCount = await notificationService.markAllAsRead(withAuth(req));
 
   Log("backend", "info", "controller", `Marked ${updatedCount} notifications as read`);
 

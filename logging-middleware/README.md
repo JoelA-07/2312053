@@ -16,7 +16,7 @@ It sends this body to the log API:
 {
   "stack": "backend",
   "level": "info",
-  "package": "middleware",
+  "package": "route",
   "message": "GET /notifications 200 - 12ms"
 }
 ```

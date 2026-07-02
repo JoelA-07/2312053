@@ -114,7 +114,7 @@ function loggingMiddleware(req, res, next) {
     const message = `${method} ${url} ${status} - ${duration}ms`;
 
     console.log(message);
-    Log("backend", level, "middleware", message);
+    Log("backend", level, "route", message);
   });
 
   next();
@@ -127,7 +127,7 @@ function errorLoggingMiddleware(err, req, res, next) {
   const logMessage = `${method} ${url} failed - ${message}`;
 
   console.error(logMessage);
-  Log("backend", "error", "middleware", logMessage);
+  Log("backend", "error", "route", logMessage);
   next(err);
 }
 

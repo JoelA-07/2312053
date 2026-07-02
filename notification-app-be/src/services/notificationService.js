@@ -1,20 +1,38 @@
 const { Log } = require("../../../logging-middleware");
+const { getAccessToken } = require("./authService");
 const { getPriorityNotifications } = require("../utils/priority");
 
-const API_URL = "http://4.224.186.213/evaluation-service/notifications";
+const DEFAULT_API_URL = "http://4.224.186.213/evaluation-service/notifications";
 const readNotificationIds = new Set();
 const localNotifications = [];
 
 function buildApiUrl(query = {}) {
-  const url = new URL(API_URL);
+  const url = new URL(process.env.NOTIFICATION_API_URL || DEFAULT_API_URL);
 
   ["limit", "page", "notification_type"].forEach((key) => {
     if (query[key]) {
-      url.searchParams.set(key, query[key]);
+      const value =
+        key === "limit" ? Math.max(Number(query[key]) || 5, 5) : query[key];
+
+      url.searchParams.set(key, value);
     }
   });
 
   return url;
+}
+
+async function getAuthHeader(query = {}) {
+  try {
+    const token = await getAccessToken();
+
+    if (token) {
+      return `Bearer ${token}`;
+    }
+  } catch (error) {
+    Log("backend", "error", "auth", error.message);
+  }
+
+  return query.authorization || "";
 }
 
 function normalizeNotification(notification) {
@@ -35,8 +53,10 @@ async function fetchRemoteNotifications(query) {
     Accept: "application/json",
   };
 
-  if (process.env.NOTIFICATION_API_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.NOTIFICATION_API_TOKEN}`;
+  const authHeader = await getAuthHeader(query);
+
+  if (authHeader) {
+    headers.Authorization = authHeader;
   }
 
   const response = await fetch(url, { headers });
